@@ -4,6 +4,8 @@ import boto3
 import botocore
 import logging
 from pprint import pformat
+import importlib
+vpc_destroy = importlib.import_module("aws-vpc-destroy.vpc_destroy")
 
 # Setup loggging
 awsLogger = logging.getLogger('awsLogger')
@@ -36,9 +38,16 @@ def ec2_terminate_instance():
 
     instanceId = obtain_input("Enter EC2 instance id to terminate:")
     if is_ec2_instance_exist(ec2_resource, instanceId):
-        resp = delete_ec2_instance(ec2_client, ec2_resource, instanceId)
+        vpcId = get_vpc(ec2_resource,ec2Id=instanceId)
+        resp = delete_ec2_instance(ec2_client, instanceId)
         awsLogger.debug(pformat(resp))
-        awsLogger.info('EC2 instance %s terminated' % instanceId)
+        awsLogger.info('EC2 instance %s terminating ... please wait' % instanceId)
+        wait_until_ec2_terminated(ec2_client,ec2Id=instanceId)
+        awsLogger.info('EC2 instance % terminated')
+        sess = boto3.session.Session()
+        resp = vpc_destroy.delete_vpc(vpc_id=vpcId, aws_region=sess.region_name)
+        awsLogger.debug(pformat(resp))
+        awsLogger.info('VPC %s deleted' % vpcId)
     else:
         awsLogger.error("EC2 instance %s does not exist" % instanceId )
 

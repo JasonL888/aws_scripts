@@ -61,3 +61,4 @@ Licence under [MIT](LICENSE)
 
 # Acknowledgements
 * Learnt a alot from article https://blog.ipswitch.com/how-to-create-and-configure-an-aws-vpc-with-python
+* jeffbrl for his https://github.com/jeffbrl/aws-vpc-destroy

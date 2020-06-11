@@ -1,0 +1,3 @@
+[submodule "aws-vpc-destroy"]
+	path = aws-vpc-destroy
+	url = git@github.com:jeffbrl/aws-vpc-destroy.git

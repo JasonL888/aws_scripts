@@ -238,6 +238,16 @@ def wait_until_ec2_running(ec2_client, ec2Id):
         }
     )
 
+def wait_until_ec2_terminated(ec2_client,ec2Id):
+    waiter = ec2_client.get_waiter('instance_terminated')
+    waiter.wait(
+        InstanceIds=[ec2Id],
+        WaiterConfig={
+            'Delay': 5,
+            'MaxAttempts': 24,
+        }
+    )
+
 def get_ec2_public_ip_address(ec2_resource,ec2Id):
     instance = ec2_resource.Instance(ec2Id)
     return(instance.public_ip_address)
@@ -253,8 +263,7 @@ def is_ec2_instance_exist(ec2_resource,ec2Id):
     except:
         return(False)
 
-def delete_ec2_instance(ec2_client, ec2_resource, instanceId):
-    vpcId = get_vpc(ec2_resource,instanceId)
+def delete_ec2_instance(ec2_client, instanceId):
     response = ec2_client.terminate_instances(InstanceIds=[instanceId])
     return(response)
 #{'ResponseMetadata': {'HTTPHeaders': {'content-type': 'text/xml;charset=UTF-8',
