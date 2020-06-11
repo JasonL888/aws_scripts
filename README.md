@@ -43,6 +43,15 @@ Mainly to automate, hopefully, with single command
   aws_secret_access_key = xxxx
   region=ap-southeast-1
   ```
+* Clone this with submodule
+```
+git clone git@github.com:JasonL888/aws_scripts.git --recursive
+```
+
+> if forget the recursive, can also do it post-cloning with
+```
+git submodules update --init 
+```
 
 # Usage
 * Provision EC2 instance
