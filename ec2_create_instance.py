@@ -1,10 +1,3 @@
-##########
-# Pre-reqs
-# * ~/.aws/config
-# [default]
-# aws_access_key_id = XXX
-# aws_secret_access_key = xxxx
-# region=ap-southeast-1
 import os
 from aws_lib import *
 import boto3
@@ -28,7 +21,7 @@ def ec2_create_instance():
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
     ec2_create_instance_logging_setup()
-
+    
     # Setup connectivity to AWS
     ec2_client = boto3.client('ec2')
     ec2_resource = boto3.resource('ec2')
@@ -108,7 +101,10 @@ def ec2_create_instance():
                 )
     awsLogger.debug(pformat(ec2CreateResp))
     ec2Id = ec2CreateResp[0].id
-    awsLogger.info('EC2 instance %s created', ec2Id)
+    awsLogger.info('EC2 instance %s created ... please wait', ec2Id)
+    wait_until_ec2_running(ec2_client, ec2Id)
+    awsLogger.info('EC2 instance %s running' % ec2Id)
+    awsLogger.info('\taccess by "ssh -i %s admin@%s"' % (keyFileName, get_ec2_public_ip_address(ec2_resource,ec2Id)) )
 
 
 if __name__ == "__main__":

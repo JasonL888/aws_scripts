@@ -228,6 +228,45 @@ def create_ec2_instance(ec2_resource, imageId,instanceType,keyName,subnetId,secu
     return(instances)
 # [ec2.Instance(id='i-07bcbcf33fc89c374')]
 
-def delete_ec2_instance(ec2_client, instanceId):
+def wait_until_ec2_running(ec2_client, ec2Id):
+    waiter = ec2_client.get_waiter('instance_running')
+    waiter.wait(
+        InstanceIds=[ec2Id],
+        WaiterConfig={
+            'Delay': 5,
+            'MaxAttempts': 24,
+        }
+    )
+
+def get_ec2_public_ip_address(ec2_resource,ec2Id):
+    instance = ec2_resource.Instance(ec2Id)
+    return(instance.public_ip_address)
+
+def get_vpc(ec2_resource,ec2Id):
+    instance = ec2_resource.Instance(ec2Id)
+    return(instance.vpc_id)
+
+def is_ec2_instance_exist(ec2_resource,ec2Id):
+    try:
+        instance = get_vpc(ec2_resource,ec2Id)
+        return(True)
+    except:
+        return(False)
+
+def delete_ec2_instance(ec2_client, ec2_resource, instanceId):
+    vpcId = get_vpc(ec2_resource,instanceId)
     response = ec2_client.terminate_instances(InstanceIds=[instanceId])
     return(response)
+#{'ResponseMetadata': {'HTTPHeaders': {'content-type': 'text/xml;charset=UTF-8',
+#                                      'date': 'Tue, 09 Jun 2020 07:18:58 GMT',
+#                                      'server': 'AmazonEC2',
+#                                      'transfer-encoding': 'chunked',
+#                                      'vary': 'accept-encoding',
+#                                      'x-amzn-requestid': '7ecd24c4-f21c-4533-b2d0-10fd80bd8851'},
+#                      'HTTPStatusCode': 200,
+#                      'RequestId': '7ecd24c4-f21c-4533-b2d0-10fd80bd8851',
+#                      'RetryAttempts': 0},
+# 'TerminatingInstances': [{'CurrentState': {'Code': 32,
+#                                            'Name': 'shutting-down'},
+#                           'InstanceId': 'i-0bbd374c8de68f58f',
+#                           'PreviousState': {'Code': 16, 'Name': 'running'}}]}
