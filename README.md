@@ -12,6 +12,9 @@ Mainly to automate, hopefully, with single command
   * adding ingress rule to allow SSH to Security Group
   * creating a Subnet associated with VPC
   * creating EC2 instance with above
+* terminating EC2 instance
+  * delete the EC2 instance
+  * remove the VPC associated using aws-vpc-destroy
 
 # Pre-requisities
 * Software Installation
