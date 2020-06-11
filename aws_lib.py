@@ -2,6 +2,8 @@ import boto3
 import logging
 from pprint import pformat
 
+
+# Key Pairs
 def describe_key_pairs(ec2_client):
     response = ec2_client.describe_key_pairs()
     return(response)
@@ -51,19 +53,181 @@ def delete_key_pair(ec2_client, keyName):
     return(response)
 # Surprising no error when keyName does not exist - always get 200 OK
 
-def create_ec2_instance(ec2_resource, imageId,instanceType,keyName,subnetId):
+# Subnet for VPC
+def create_subnet(ec2_client, vpcId):
+    response = ec2_client.create_subnet(CidrBlock='172.30.1.0/24', VpcId=vpcId)
+    return(response)
+# Sample response
+#{'ResponseMetadata': {'HTTPHeaders': {'content-length': '939',
+#                                      'content-type': 'text/xml;charset=UTF-8',
+#                                      'date': 'Tue, 09 Jun 2020 09:27:10 GMT',
+#                                      'server': 'AmazonEC2',
+#                                      'x-amzn-requestid': 'c0e70824-1e25-4309-bd42-98294c5dafbc'},
+#                      'HTTPStatusCode': 200,
+#                      'RequestId': 'c0e70824-1e25-4309-bd42-98294c5dafbc',
+#                      'RetryAttempts': 0},
+# 'Subnet': {'AssignIpv6AddressOnCreation': False,
+#            'AvailabilityZone': 'ap-southeast-1c',
+#            'AvailabilityZoneId': 'apse1-az3',
+#            'AvailableIpAddressCount': 251,
+#            'CidrBlock': '172.30.1.0/24',
+#            'DefaultForAz': False,
+#            'Ipv6CidrBlockAssociationSet': [],
+#            'MapPublicIpOnLaunch': False,
+#            'OwnerId': '214228110897',
+#            'State': 'pending',
+#            'SubnetArn': 'arn:aws:ec2:ap-southeast-1:214228110897:subnet/subnet-0092ead57d6ad3631',
+#            'SubnetId': 'subnet-0092ead57d6ad3631',
+#            'VpcId': 'vpc-0ae5f0f3f93dcaf18'}}
+
+# VPC
+def create_VPC(ec2_client):
+    response = ec2_client.create_vpc(
+        CidrBlock='172.30.0.0/16',
+        AmazonProvidedIpv6CidrBlock=True,
+        InstanceTenancy='default'
+        )
+    return(response)
+# sample Response
+#'Vpc': {'CidrBlock': '172.30.0.0/16',
+#         'CidrBlockAssociationSet': [{'AssociationId': 'vpc-cidr-assoc-025a3be63bee3a468',
+#                                      'CidrBlock': '172.30.0.0/16',
+#                                      'CidrBlockState': {'State': 'associated'}}],
+#         'DhcpOptionsId': 'dopt-964776f2',
+#         'InstanceTenancy': 'default',
+#         'Ipv6CidrBlockAssociationSet': [{'AssociationId': 'vpc-cidr-assoc-006b79f0f4fca14ad',
+#                                          'Ipv6CidrBlock': '',
+#                                          'Ipv6CidrBlockState': {'State': 'associating'},
+#                                          'Ipv6Pool': 'Amazon',
+#                                          'NetworkBorderGroup': 'ap-southeast-1'}],
+#         'IsDefault': False,
+#         'OwnerId': '214228110897',
+#         'State': 'pending',
+#         'VpcId': 'vpc-0ae5f0f3f93dcaf18'}}
+#Note: Deleting this VPC will also delete these objects associated with this VPC in this region:
+#Subnets
+#Security Groups
+#Network ACLs
+#Internet Gateways
+#Egress Only Internet Gateways
+#Route Tables
+#Network Interfaces
+#Peering Connections
+#Endpoints
+
+# Internet Gateway
+def create_internet_gateway(ec2_resource):
+    response = ec2_resource.create_internet_gateway()
+    return(response)
+# sample Response
+#ec2.InternetGateway(id='igw-0e402526a44cd2093')
+
+def attach_internet_gateway(ec2_client,internetGatewayId,vpcId):
+    response = ec2_client.attach_internet_gateway(InternetGatewayId=internetGatewayId,VpcId=vpcId)
+    return(response)
+# 200 OK
+
+# Route table
+def get_route_table_from_vpc(ec2_resource, vpcId):
+    vpc = ec2_resource.Vpc(vpcId)
+    routeTableList = list(vpc.route_tables.all())
+    return( routeTableList[0].id )
+
+def create_route_table(ec2_client,vpcId):
+    response = ec2_client.create_route_table(VpcId=vpcId)
+    return(response)
+# sample
+#{'ResponseMetadata': {'HTTPHeaders': {'content-length': '1010',
+#                                      'content-type': 'text/xml;charset=UTF-8',
+#                                      'date': 'Wed, 10 Jun 2020 08:33:14 GMT',
+#                                      'server': 'AmazonEC2',
+#                                      'x-amzn-requestid': 'f7077840-4dcb-4b37-9393-6d237c118989'},
+#                      'HTTPStatusCode': 200,
+#                      'RequestId': 'f7077840-4dcb-4b37-9393-6d237c118989',
+#                      'RetryAttempts': 0},
+# 'RouteTable': {'Associations': [],
+#                'OwnerId': '214228110897',
+#                'PropagatingVgws': [],
+#                'RouteTableId': 'rtb-01db2c073aa3cfaef',
+#                'Routes': [{'DestinationCidrBlock': '172.30.0.0/16',
+#                            'GatewayId': 'local',
+#                            'Origin': 'CreateRouteTable',
+#                            'State': 'active'},
+#                           {'DestinationIpv6CidrBlock': '2406:da18:15b:fc00::/56',
+#                            'GatewayId': 'local',
+#                            'Origin': 'CreateRouteTable',
+#                            'State': 'active'}],
+#                'Tags': [],
+#                'VpcId': 'vpc-0ae5f0f3f93dcaf18'}}
+
+def create_route(ec2_client,destinationCidrBlock,gatewayId,routeTableId):
+    response = ec2_client.create_route(
+        DestinationCidrBlock=destinationCidrBlock,
+        GatewayId=gatewayId,
+        RouteTableId=routeTableId,
+    )
+# resp None
+
+
+# Security Groups
+def create_security_group(ec2_client,vpcId):
+    response = ec2_client.create_security_group(
+        Description='Sec Group For %s' % vpcId,
+        GroupName='Sec Group For %s' % vpcId,
+        VpcId=vpcId
+    )
+    return(response)
+# sample Response
+#{'GroupId': 'sg-08d39c6841ba4ed7a',
+# 'ResponseMetadata': {'HTTPHeaders': {'content-length': '283',
+#                                      'content-type': 'text/xml;charset=UTF-8',
+#                                      'date': 'Tue, 09 Jun 2020 09:07:25 GMT',
+#                                      'server': 'AmazonEC2',
+#                                      'x-amzn-requestid': 'bc288548-c1df-4aea-8759-b8252dbf37d4'},
+#                      'HTTPStatusCode': 200,
+#                      'RequestId': 'bc288548-c1df-4aea-8759-b8252dbf37d4',
+#                      'RetryAttempts': 0}}
+
+def authorize_security_group_ingress(ec2_client, groupId):
+    response = ec2_client.authorize_security_group_ingress(
+        GroupId=groupId,
+        IpPermissions=[
+            {
+                'FromPort': 22,
+                'IpProtocol': 'tcp',
+                'IpRanges': [
+                    {
+                        'CidrIp': '0.0.0.0/0',
+                        'Description': 'SSH access from anywhere'
+                    }
+                ],
+                'ToPort': 22,
+            }
+
+        ]
+    )
+
+
+# EC2
+def create_ec2_instance(ec2_resource, imageId,instanceType,keyName,subnetId,securityGroupId):
     instances = ec2_resource.create_instances(
         ImageId=imageId,
         MinCount=1,
         MaxCount=1,
         InstanceType=instanceType,
         KeyName=keyName,
-        SubnetId=subnetId
+        NetworkInterfaces=[
+            {
+                'SubnetId':subnetId,
+                'DeviceIndex': 0,
+                'AssociatePublicIpAddress': True,
+                'Groups': [securityGroupId],
+            }
+        ],
     )
     return(instances)
+# [ec2.Instance(id='i-07bcbcf33fc89c374')]
 
 def delete_ec2_instance(ec2_client, instanceId):
     response = ec2_client.terminate_instances(InstanceIds=[instanceId])
     return(response)
-
-
